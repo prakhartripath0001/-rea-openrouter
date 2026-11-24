@@ -39,6 +39,10 @@ public class ModelService {
         int page = request.page() == null ? 0 : request.page();
         int size = request.size() == null ? DEFAULT_PAGE_SIZE : request.size();
         if (size > MAX_PAGE_SIZE) throw new InvalidModelQueryException("size must not exceed " + MAX_PAGE_SIZE);
+        if (request.minContextLength() != null && request.maxContextLength() != null
+                && request.minContextLength() > request.maxContextLength()) {
+            throw new InvalidModelQueryException("minContextLength must not exceed maxContextLength");
+        }
 
         String sortField = request.sort() == null || request.sort().isBlank() ? "name" : request.sort();
         if (!ALLOWED_SORTS.contains(sortField)) {

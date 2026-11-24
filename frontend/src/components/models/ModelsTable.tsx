@@ -1,6 +1,6 @@
-import type { ModelFixture } from '../../types/model'
+import type { ModelCardModel } from '../../types/model'
 
-interface Props { models: ModelFixture[] }
+interface Props { models: ModelCardModel[] }
 
 export default function ModelsTable({ models }: Props) {
   return (
@@ -24,7 +24,7 @@ export default function ModelsTable({ models }: Props) {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5 text-[12px] font-semibold text-ink">{model.author}: {model.name}<span className="rounded-full bg-[#f0f3f1] px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-muted">Mock</span></div>
                     <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-muted">{model.description}</p>
-                    <code className="mt-1 block truncate text-[9px] text-[#929b97]">{model.id}</code>
+                    <code className="mt-1 block truncate text-[9px] text-[#929b97]">{model.modelKey}</code>
                   </div>
                 </div>
               </td>

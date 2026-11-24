@@ -33,7 +33,7 @@ CREATE TABLE model_providers (
 CREATE TABLE model_pricing (
     id UUID PRIMARY KEY,
     model_provider_id UUID NOT NULL REFERENCES model_providers(id) ON DELETE CASCADE,
-    currency CHAR(3) NOT NULL DEFAULT 'USD',
+    currency VARCHAR(3) NOT NULL DEFAULT 'USD',
     billing_unit VARCHAR(40) NOT NULL DEFAULT 'PER_MILLION_TOKENS',
     prompt_rate_per_million NUMERIC(18, 6) NOT NULL CHECK (prompt_rate_per_million >= 0),
     output_rate_per_million NUMERIC(18, 6) CHECK (output_rate_per_million >= 0),

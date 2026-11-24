@@ -1,9 +1,9 @@
 import { ArrowUpRight, AudioLines, Copy, Image, MessageSquareText, Video } from 'lucide-react'
-import type { ModelFixture } from '../../types/model'
+import type { ModelCardModel } from '../../types/model'
 
 const modalityIcons = { Text: MessageSquareText, Image, Audio: AudioLines, Video, Embeddings: MessageSquareText }
 
-interface Props { model: ModelFixture; view: 'cards' | 'list' }
+interface Props { model: ModelCardModel; view: 'cards' | 'list' }
 
 export default function ModelCard({ model, view }: Props) {
   const list = view === 'list'
@@ -35,7 +35,7 @@ export default function ModelCard({ model, view }: Props) {
         <Metric label="Output · mock" value={model.outputPrice} />
       </div>
       <div className={`flex items-center gap-1 ${list ? 'self-end sm:self-auto' : 'mt-3 justify-end'}`}>
-        <span className="mr-auto text-[9px] text-[#929b97]">Fixture: {model.id}</span>
+        <span className="mr-auto text-[9px] text-[#929b97]">Model key: {model.modelKey}</span>
         <button aria-label={`Copy ${model.id}`} className="grid h-7 w-7 place-items-center rounded-md text-muted opacity-70 transition hover:bg-[#f2f5f2] hover:text-ink"><Copy size={13} /></button>
         <button aria-label={`View ${model.name} details`} className="grid h-7 w-7 place-items-center rounded-md text-muted opacity-70 transition hover:bg-[#f2f5f2] hover:text-ink"><ArrowUpRight size={14} /></button>
       </div>

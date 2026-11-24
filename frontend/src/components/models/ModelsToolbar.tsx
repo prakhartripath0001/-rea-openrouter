@@ -1,13 +1,17 @@
 import { List, Search, Table2, X } from 'lucide-react'
 
+export type ModelSort = 'name' | 'contextLength' | 'createdAt'
+
 interface Props {
   query: string
   onQueryChange: (value: string) => void
   view: 'list' | 'table'
   onViewChange: (value: 'list' | 'table') => void
+  sort: ModelSort
+  onSortChange: (value: ModelSort) => void
 }
 
-export default function ModelsToolbar({ query, onQueryChange, view, onViewChange }: Props) {
+export default function ModelsToolbar({ query, onQueryChange, view, onViewChange, sort, onSortChange }: Props) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <label className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-lg border border-line bg-white px-3 text-muted transition focus-within:border-[#9bc9aa] focus-within:ring-2 focus-within:ring-[#dff1e5] sm:max-w-[460px]">
@@ -17,7 +21,14 @@ export default function ModelsToolbar({ query, onQueryChange, view, onViewChange
         {!query && <kbd className="hidden rounded border border-line px-1.5 py-0.5 text-[10px] text-[#8b9490] sm:inline">⌘ K</kbd>}
       </label>
       <div className="flex items-center justify-between gap-3 sm:justify-end">
-        <span className="text-[11px] text-muted">Sort: <span className="font-medium text-ink">Featured</span></span>
+        <label className="flex items-center gap-1.5 text-[11px] text-muted">
+          Sort
+          <select value={sort} onChange={(event) => onSortChange(event.target.value as ModelSort)} className="rounded-md border border-line bg-white px-2 py-1.5 text-[11px] font-medium text-ink outline-none focus:border-[#9bc9aa]">
+            <option value="name">Name</option>
+            <option value="contextLength">Context length</option>
+            <option value="createdAt">Recently added</option>
+          </select>
+        </label>
         <div className="flex rounded-lg border border-line bg-white p-0.5" aria-label="Display style">
           <button aria-label="List view" aria-pressed={view === 'list'} onClick={() => onViewChange('list')} className={`grid h-7 w-8 place-items-center rounded-md transition ${view === 'list' ? 'bg-[#eef2ef] text-ink' : 'text-muted hover:text-ink'}`}><List size={16} /></button>
           <button aria-label="Table view" aria-pressed={view === 'table'} onClick={() => onViewChange('table')} className={`grid h-7 w-8 place-items-center rounded-md transition ${view === 'table' ? 'bg-[#eef2ef] text-ink' : 'text-muted hover:text-ink'}`}><Table2 size={15} /></button>
