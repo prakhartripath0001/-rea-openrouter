@@ -1,10 +1,10 @@
-import { Grid2X2, List, Search, X } from 'lucide-react'
+import { List, Search, Table2, X } from 'lucide-react'
 
 interface Props {
   query: string
   onQueryChange: (value: string) => void
-  view: 'cards' | 'list'
-  onViewChange: (value: 'cards' | 'list') => void
+  view: 'list' | 'table'
+  onViewChange: (value: 'list' | 'table') => void
 }
 
 export default function ModelsToolbar({ query, onQueryChange, view, onViewChange }: Props) {
@@ -19,8 +19,8 @@ export default function ModelsToolbar({ query, onQueryChange, view, onViewChange
       <div className="flex items-center justify-between gap-3 sm:justify-end">
         <span className="text-[11px] text-muted">Sort: <span className="font-medium text-ink">Featured</span></span>
         <div className="flex rounded-lg border border-line bg-white p-0.5" aria-label="Display style">
-          <button aria-label="Card view" aria-pressed={view === 'cards'} onClick={() => onViewChange('cards')} className={`grid h-7 w-8 place-items-center rounded-md transition ${view === 'cards' ? 'bg-[#eef2ef] text-ink' : 'text-muted hover:text-ink'}`}><Grid2X2 size={15} /></button>
           <button aria-label="List view" aria-pressed={view === 'list'} onClick={() => onViewChange('list')} className={`grid h-7 w-8 place-items-center rounded-md transition ${view === 'list' ? 'bg-[#eef2ef] text-ink' : 'text-muted hover:text-ink'}`}><List size={16} /></button>
+          <button aria-label="Table view" aria-pressed={view === 'table'} onClick={() => onViewChange('table')} className={`grid h-7 w-8 place-items-center rounded-md transition ${view === 'table' ? 'bg-[#eef2ef] text-ink' : 'text-muted hover:text-ink'}`}><Table2 size={15} /></button>
         </div>
       </div>
     </div>

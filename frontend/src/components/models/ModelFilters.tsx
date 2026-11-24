@@ -1,7 +1,7 @@
 import { ChevronDown, SlidersHorizontal } from 'lucide-react'
 
 const sections = [
-  { title: 'Capabilities', options: ['Tools', 'Reasoning', 'Structured outputs'] },
+  { title: 'Capabilities', options: ['Tools', 'Reasoning', 'Embedding', 'Audio', 'Video'] },
   { title: 'Pricing', options: ['Free models', 'Discounted'] },
   { title: 'Context length', options: ['32K+', '100K+'] },
   { title: 'Providers', options: ['Northstar', 'Aster', 'Orbit', 'Ember', 'Lumen'] },

@@ -1,26 +1,13 @@
 {
-  "name": "openrouter-ui-foundation",
+  "name": "openrouter-clone",
   "private": true,
   "version": "0.1.0",
-  "type": "module",
+  "workspaces": [
+    "frontend"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "lucide-react": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "vite": "latest"
-  },
-  "devDependencies": {
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "autoprefixer": "latest",
-    "postcss": "latest",
-    "tailwindcss": "3.4.17",
-    "typescript": "latest"
+    "dev": "npm run dev --workspace @openrouter/frontend",
+    "build": "npm run build --workspace @openrouter/frontend",
+    "preview": "npm run preview --workspace @openrouter/frontend"
   }
 }

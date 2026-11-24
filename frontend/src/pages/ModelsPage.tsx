@@ -4,21 +4,25 @@ import ModelCard from '../components/models/ModelCard'
 import ModelFilters from '../components/models/ModelFilters'
 import ModalityTabs from '../components/models/ModalityTabs'
 import ModelsToolbar from '../components/models/ModelsToolbar'
+import ModelsTable from '../components/models/ModelsTable'
 import { mockModels } from '../data/mockModels'
 import type { Modality } from '../types/model'
 
 export default function ModelsPage() {
   const [query, setQuery] = useState('')
   const [modality, setModality] = useState('All models')
-  const [view, setView] = useState<'cards' | 'list'>('cards')
+  const [view, setView] = useState<'list' | 'table'>('list')
   const [selectedFilters, setSelectedFilters] = useState<string[]>([])
 
   const visibleModels = useMemo(() => mockModels.filter((model) => {
     const text = `${model.name} ${model.author} ${model.description} ${model.id}`.toLowerCase()
     const matchesQuery = text.includes(query.trim().toLowerCase())
     const matchesModality = modality === 'All models' || model.modalities.includes(modality as Modality)
-    const matchesProvider = selectedFilters.every((filter) => !['Northstar', 'Aster', 'Orbit', 'Ember', 'Lumen'].includes(filter) || model.author === filter)
-    const matchesCapability = selectedFilters.every((filter) => !['Tools', 'Reasoning', 'Embedding', 'Audio', 'Video'].includes(filter) || model.tags.includes(filter))
+    const providers = ['Northstar', 'Aster', 'Orbit', 'Ember', 'Lumen']
+    const providerFilters = selectedFilters.filter((filter) => providers.includes(filter))
+    const capabilityFilters = selectedFilters.filter((filter) => !providers.includes(filter))
+    const matchesProvider = providerFilters.length === 0 || providerFilters.includes(model.author)
+    const matchesCapability = capabilityFilters.every((filter) => model.tags.includes(filter))
     return matchesQuery && matchesModality && matchesProvider && matchesCapability
   }), [modality, query, selectedFilters])
 
@@ -53,9 +57,9 @@ export default function ModelsPage() {
             <span className="text-[10px] text-[#929b97]">Sample catalogue</span>
           </div>
           {visibleModels.length > 0 ? (
-            <div className={view === 'cards' ? 'grid grid-cols-1 gap-3 xl:grid-cols-2' : 'flex flex-col gap-2.5'}>
-              {visibleModels.map((model) => <ModelCard key={model.id} model={model} view={view} />)}
-            </div>
+            view === 'list'
+              ? <div className="flex flex-col gap-2.5">{visibleModels.map((model) => <ModelCard key={model.id} model={model} view="list" />)}</div>
+              : <ModelsTable models={visibleModels} />
           ) : (
             <div className="grid min-h-56 place-items-center rounded-xl border border-dashed border-[#d8dfda] bg-white px-6 text-center">
               <div><p className="text-sm font-semibold text-ink">No demo models match</p><p className="mt-1 text-xs text-muted">Try another search or clear one of the selected filters.</p></div>
