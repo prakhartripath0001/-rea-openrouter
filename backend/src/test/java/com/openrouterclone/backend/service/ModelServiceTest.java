@@ -72,6 +72,40 @@ class ModelServiceTest {
     }
 
     @Test
+    void rejectsPageSizeAboveMaximum() {
+        ModelSearchRequest request = new ModelSearchRequest(null, null, null, null, null, null,
+                null, null, null, null, 0, 101, "name", "asc");
+
+        assertThrows(InvalidModelQueryException.class, () -> modelService.list(request));
+        verify(modelRepository, never()).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void rejectsInvalidSortDirection() {
+        ModelSearchRequest request = new ModelSearchRequest(null, null, null, null, null, null,
+                null, null, null, null, 0, 20, "name", "sideways");
+
+        assertThrows(InvalidModelQueryException.class, () -> modelService.list(request));
+        verify(modelRepository, never()).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void forwardsRequestedPaginationAndSortToRepository() {
+        when(modelRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenAnswer(invocation -> Page.empty(invocation.getArgument(1)));
+        ModelSearchRequest request = new ModelSearchRequest(null, null, null, null, null, null,
+                null, null, null, null, 2, 10, "contextLength", "desc");
+
+        var response = modelService.list(request);
+
+        assertEquals(2, response.page());
+        assertEquals(10, response.size());
+        verify(modelRepository).findAll(any(Specification.class), org.mockito.ArgumentMatchers.argThat(pageable ->
+                pageable.getPageNumber() == 2 && pageable.getPageSize() == 10
+                        && pageable.getSort().getOrderFor("contextLength").getDirection() == Sort.Direction.DESC));
+    }
+
+    @Test
     void returnsDetailsForKnownId() {
         UUID id = UUID.randomUUID();
         ModelEntity entity = org.mockito.Mockito.mock(ModelEntity.class);

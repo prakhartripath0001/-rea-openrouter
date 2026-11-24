@@ -26,15 +26,8 @@ function formatRate(value: number | null | undefined, currency: string): string 
 
 export function toModelCardModel(model: ModelResponse): ModelCardModel {
   const primaryProvider = model.providers[0]
-  const prices = model.providers.flatMap((provider) => provider.pricing)
-  const tokenPrices = prices.filter((price) => price.billingUnit === 'PER_MILLION_TOKENS')
-  const promptPrice = tokenPrices.length
-    ? tokenPrices.reduce((lowest, current) => current.promptRatePerMillion < lowest.promptRatePerMillion ? current : lowest)
-    : undefined
-  const outputPrices = tokenPrices.filter((price) => price.outputRatePerMillion !== null)
-  const outputPrice = outputPrices.length
-    ? outputPrices.reduce((lowest, current) => current.outputRatePerMillion! < lowest.outputRatePerMillion! ? current : lowest)
-    : undefined
+  const tokenPrices = primaryProvider?.pricing.filter((price) => price.billingUnit === 'PER_MILLION_TOKENS') ?? []
+  const displayPrice = tokenPrices[0]
   const author = primaryProvider?.name ?? 'Unknown provider'
   const accentIndex = primaryProvider
     ? Array.from(primaryProvider.slug).reduce((value, character) => value + character.charCodeAt(0), 0) % accents.length
@@ -47,8 +40,8 @@ export function toModelCardModel(model: ModelResponse): ModelCardModel {
     author,
     description: model.description,
     context: formatContextLength(model.contextLength),
-    promptPrice: formatRate(promptPrice?.promptRatePerMillion, promptPrice?.currency ?? 'USD'),
-    outputPrice: formatRate(outputPrice?.outputRatePerMillion, outputPrice?.currency ?? 'USD'),
+    promptPrice: formatRate(displayPrice?.promptRatePerMillion, displayPrice?.currency ?? 'USD'),
+    outputPrice: formatRate(displayPrice?.outputRatePerMillion, displayPrice?.currency ?? 'USD'),
     modalities: model.modalities as Modality[],
     tags: model.tags,
     accent: accents[accentIndex],

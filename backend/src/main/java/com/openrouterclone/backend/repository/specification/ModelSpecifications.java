@@ -3,7 +3,6 @@ package com.openrouterclone.backend.repository.specification;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 
 import org.springframework.data.jpa.domain.Specification;
 
@@ -15,7 +14,6 @@ import com.openrouterclone.backend.entity.ModelTagEntity;
 import com.openrouterclone.backend.entity.ProviderEntity;
 
 import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
 
@@ -25,18 +23,18 @@ public final class ModelSpecifications {
 
     public static Specification<ModelEntity> search(String queryText) {
         if (queryText == null || queryText.isBlank()) return null;
-        String pattern = "%" + queryText.trim().toLowerCase(Locale.ROOT) + "%";
+        String pattern = "%" + escapeLike(queryText.trim().toLowerCase(Locale.ROOT)) + "%";
         return (root, query, cb) -> {
-            Predicate nameMatch = cb.like(cb.lower(root.get("name")), pattern);
-            Predicate keyMatch = cb.like(cb.lower(root.get("modelKey")), pattern);
-            Predicate descriptionMatch = cb.like(cb.lower(root.get("description")), pattern);
+            Predicate nameMatch = cb.like(cb.lower(root.get("name")), pattern, '\\');
+            Predicate keyMatch = cb.like(cb.lower(root.get("modelKey")), pattern, '\\');
+            Predicate descriptionMatch = cb.like(cb.lower(root.get("description")), pattern, '\\');
             Subquery<Integer> providerQuery = query.subquery(Integer.class);
             var modelProvider = providerQuery.from(ModelProviderEntity.class);
             Join<ModelProviderEntity, ProviderEntity> provider = modelProvider.join("provider");
             providerQuery.select(cb.literal(1)).where(
                     cb.equal(modelProvider.get("model"), root),
-                    cb.or(cb.like(cb.lower(provider.get("name")), pattern),
-                            cb.like(cb.lower(provider.get("slug")), pattern)));
+                    cb.or(cb.like(cb.lower(provider.get("name")), pattern, '\\'),
+                            cb.like(cb.lower(provider.get("slug")), pattern, '\\')));
             return cb.or(nameMatch, keyMatch, descriptionMatch, cb.exists(providerQuery));
         };
     }
@@ -107,5 +105,9 @@ public final class ModelSpecifications {
             subquery.select(cb.literal(1)).where(predicates.toArray(Predicate[]::new));
             return cb.exists(subquery);
         };
+    }
+
+    private static String escapeLike(String value) {
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 }

@@ -1,11 +1,16 @@
 package com.openrouterclone.backend.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -38,6 +43,23 @@ class CatalogueApiIntegrationTest {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Test
+    void cleanMigrationCreatesExpectedSchemaIndexesAndSeedRows() {
+        assertThat(jdbcTemplate.queryForObject("select count(*) from flyway_schema_history where success", Integer.class))
+                .isGreaterThanOrEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from models", Integer.class)).isEqualTo(6);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from providers", Integer.class)).isEqualTo(5);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from model_modalities", Integer.class)).isEqualTo(11);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from model_pricing", Integer.class)).isEqualTo(6);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from supported_model_parameters", Integer.class)).isEqualTo(4);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from model_tags", Integer.class)).isEqualTo(10);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from pg_indexes where schemaname = current_schema() and indexname = 'idx_models_name_trgm'", Integer.class))
+                .isEqualTo(1);
+    }
+
     @Test
     void listsSeededModelsAndSupportsNameSearchAndPagination() {
         ResponseEntity<JsonNode> response = restTemplate.getForEntity("/api/v1/models?q=Vision&page=0&size=1", JsonNode.class);
@@ -47,6 +69,40 @@ class CatalogueApiIntegrationTest {
         assertThat(response.getBody().path("content").get(0).path("modelKey").asText()).isEqualTo("aster/vision-pro");
         assertThat(response.getBody().path("totalElements").asLong()).isEqualTo(1);
         assertThat(response.getBody().path("size").asInt()).isEqualTo(1);
+    }
+
+    @Test
+    void searchesProviderAndTreatsLikeWildcardsLiterally() {
+        ResponseEntity<JsonNode> providerSearch = restTemplate.getForEntity("/api/v1/models?q=Northstar", JsonNode.class);
+        ResponseEntity<JsonNode> wildcardSearch = restTemplate.getForEntity("/api/v1/models?q=%25", JsonNode.class);
+
+        assertThat(providerSearch.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(providerSearch.getBody().path("totalElements").asLong()).isEqualTo(2);
+        assertThat(wildcardSearch.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(wildcardSearch.getBody().path("totalElements").asLong()).isZero();
+    }
+
+    @Test
+    void supportsModalitySortingAndPageMetadata() {
+        ResponseEntity<JsonNode> modality = restTemplate.getForEntity("/api/v1/models?modality=Video", JsonNode.class);
+        ResponseEntity<JsonNode> paged = restTemplate.getForEntity(
+                "/api/v1/models?page=1&size=2&sort=name&direction=desc", JsonNode.class);
+
+        assertThat(modality.getBody().path("totalElements").asLong()).isEqualTo(1);
+        assertThat(modality.getBody().path("content").get(0).path("modelKey").asText()).isEqualTo("lumen/video-understand");
+        assertThat(paged.getBody().path("totalElements").asLong()).isEqualTo(6);
+        assertThat(paged.getBody().path("totalPages").asInt()).isEqualTo(3);
+        assertThat(paged.getBody().path("content")).hasSize(2);
+        assertThat(paged.getBody().path("content").get(0).path("name").asText()).isEqualTo("Speech Live");
+    }
+
+    @Test
+    void supportsMultipleProviderFiltersAsAnOrGroup() {
+        ResponseEntity<JsonNode> response = restTemplate.getForEntity(
+                "/api/v1/models?providers=northstar&providers=lumen", JsonNode.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().path("totalElements").asLong()).isEqualTo(3);
     }
 
     @Test
@@ -101,5 +157,38 @@ class CatalogueApiIntegrationTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getHeaders().getAccessControlAllowOrigin()).isEqualTo("http://localhost:5173");
+    }
+
+    @Test
+    void databaseSupportsCreateReadUpdateDelete() {
+        UUID id = UUID.randomUUID();
+        String modelKey = "test/temporary-model";
+        jdbcTemplate.update("insert into models (id, model_key, name, description, context_length) values (?, ?, ?, ?, ?)",
+                id, modelKey, "Temporary", "Test row", 4096);
+        assertThat(jdbcTemplate.queryForObject("select name from models where id = ?", String.class, id)).isEqualTo("Temporary");
+
+        jdbcTemplate.update("update models set name = ? where id = ?", "Updated temporary", id);
+        assertThat(jdbcTemplate.queryForObject("select name from models where id = ?", String.class, id)).isEqualTo("Updated temporary");
+
+        jdbcTemplate.update("delete from models where id = ?", id);
+        assertThat(jdbcTemplate.queryForObject("select count(*) from models where id = ?", Integer.class, id)).isZero();
+    }
+
+    @Test
+    void databaseRejectsDuplicateKeysInvalidRowsAndBrokenForeignKeys() {
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "insert into providers (id, slug, name) values (?, ?, ?)", UUID.randomUUID(), "northstar", "Duplicate"))
+                .isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "insert into models (id, model_key, name, description, context_length) values (?, ?, ?, ?, ?)",
+                UUID.randomUUID(), "test/invalid-context", "Invalid", "Invalid context", -1))
+                .isInstanceOf(DataIntegrityViolationException.class);
+
+        UUID providerId = jdbcTemplate.queryForObject("select id from providers limit 1", UUID.class);
+        assertThatThrownBy(() -> jdbcTemplate.update(
+                "insert into model_providers (id, model_id, provider_id) values (?, ?, ?)",
+                UUID.randomUUID(), UUID.randomUUID(), providerId))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 }

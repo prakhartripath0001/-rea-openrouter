@@ -1,5 +1,5 @@
 import { apiGet } from './client'
-import type { FilterOptionsResponse, ModelQuery, ModelResponse, PageResponse, ProviderOption } from './types'
+import type { FilterOptionsResponse, ModelQuery, ModelResponse, PageResponse } from './types'
 
 export function getModels(query: ModelQuery = {}): Promise<PageResponse<ModelResponse>> {
   const params = new URLSearchParams()
@@ -22,10 +22,6 @@ export function getModels(query: ModelQuery = {}): Promise<PageResponse<ModelRes
 
 export function getModel(id: string): Promise<ModelResponse> {
   return apiGet(`/models/${encodeURIComponent(id)}`)
-}
-
-export function getProviders(): Promise<ProviderOption[]> {
-  return apiGet('/providers')
 }
 
 export function getFilterOptions(): Promise<FilterOptionsResponse> {

@@ -50,7 +50,7 @@ export default function ModelsPage() {
       page: 0,
       size: 50,
       sort,
-      direction: 'asc',
+      direction: sort === 'createdAt' ? 'desc' : 'asc',
     })
       .then((page) => {
         if (cancelled) return
