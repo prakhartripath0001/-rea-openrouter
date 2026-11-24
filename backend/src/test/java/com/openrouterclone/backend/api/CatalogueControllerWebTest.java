@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -129,6 +132,16 @@ class CatalogueControllerWebTest {
     }
 
     @Test
+    void unexpectedErrorsReturnGenericMessageWithoutLeakingExceptionDetails() throws Exception {
+        when(modelService.list(any())).thenThrow(new IllegalStateException("database password leaked detail"));
+
+        mockMvc.perform(get("/api/v1/models"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("An unexpected server error occurred"))
+                .andExpect(content().string(not(containsString("database password leaked detail"))));
+    }
+
+    @Test
     void detailsProvidersAndFiltersExposeExpectedJsonContracts() throws Exception {
         UUID id = UUID.randomUUID();
         when(modelService.get(id)).thenReturn(new ModelResponse(id, "aster/vision-pro", "Vision Pro", "Demo",
@@ -153,13 +166,14 @@ class CatalogueControllerWebTest {
     @Test
     void mapsUnknownAndMalformedModelIdsTo404And400() throws Exception {
         UUID id = UUID.randomUUID();
-        when(modelService.get(id)).thenThrow(new ModelNotFoundException(id));
+        when(modelService.get(id)).thenThrow(new ModelNotFoundException());
 
         mockMvc.perform(get("/api/v1/models/{id}", id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
         mockMvc.perform(get("/api/v1/models/not-a-uuid"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid value for parameter: id"));
     }
 
     @Test

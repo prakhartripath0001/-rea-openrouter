@@ -100,7 +100,7 @@ class ModelServiceTest {
 
         assertEquals(2, response.page());
         assertEquals(10, response.size());
-        verify(modelRepository).findAll(any(Specification.class), org.mockito.ArgumentMatchers.argThat(pageable ->
+        verify(modelRepository).findAll(any(Specification.class), org.mockito.ArgumentMatchers.<Pageable>argThat(pageable ->
                 pageable.getPageNumber() == 2 && pageable.getPageSize() == 10
                         && pageable.getSort().getOrderFor("contextLength").getDirection() == Sort.Direction.DESC));
     }

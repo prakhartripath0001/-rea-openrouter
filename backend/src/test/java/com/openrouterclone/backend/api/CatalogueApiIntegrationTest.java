@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.UUID;
+import java.net.URI;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.HttpEntity;
@@ -46,6 +48,9 @@ class CatalogueApiIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @LocalServerPort
+    private int serverPort;
+
     @Test
     void cleanMigrationCreatesExpectedSchemaIndexesAndSeedRows() {
         assertThat(jdbcTemplate.queryForObject("select count(*) from flyway_schema_history where success", Integer.class))
@@ -74,7 +79,8 @@ class CatalogueApiIntegrationTest {
     @Test
     void searchesProviderAndTreatsLikeWildcardsLiterally() {
         ResponseEntity<JsonNode> providerSearch = restTemplate.getForEntity("/api/v1/models?q=Northstar", JsonNode.class);
-        ResponseEntity<JsonNode> wildcardSearch = restTemplate.getForEntity("/api/v1/models?q=%25", JsonNode.class);
+        URI wildcardSearchUri = URI.create("http://localhost:" + serverPort + "/api/v1/models?q=%25");
+        ResponseEntity<JsonNode> wildcardSearch = restTemplate.getForEntity(wildcardSearchUri, JsonNode.class);
 
         assertThat(providerSearch.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(providerSearch.getBody().path("totalElements").asLong()).isEqualTo(2);
@@ -118,6 +124,20 @@ class CatalogueApiIntegrationTest {
         assertThat(discounted.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(discounted.getBody().path("totalElements").asLong()).isEqualTo(1);
         assertThat(discounted.getBody().path("content").get(0).path("modelKey").asText()).isEqualTo("aster/vision-pro");
+    }
+
+    @Test
+    void filtersByContextRangeAndMaximumOutputPrice() {
+        ResponseEntity<JsonNode> context = restTemplate.getForEntity(
+                "/api/v1/models?minContextLength=96000&maxContextLength=128000", JsonNode.class);
+        ResponseEntity<JsonNode> outputPrice = restTemplate.getForEntity(
+                "/api/v1/models?maxOutputPricePerMillion=1.00", JsonNode.class);
+
+        assertThat(context.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(context.getBody().path("totalElements").asLong()).isEqualTo(2);
+        assertThat(outputPrice.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(outputPrice.getBody().path("totalElements").asLong()).isEqualTo(1);
+        assertThat(outputPrice.getBody().path("content").get(0).path("modelKey").asText()).isEqualTo("northstar/chat-2");
     }
 
     @Test

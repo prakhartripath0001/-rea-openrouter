@@ -31,7 +31,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({InvalidModelQueryException.class, MethodArgumentTypeMismatchException.class})
     public ResponseEntity<ApiErrorResponse> handleBadRequest(Exception exception, HttpServletRequest request) {
-        return response(HttpStatus.BAD_REQUEST, exception.getMessage(), request);
+        String message = exception instanceof MethodArgumentTypeMismatchException mismatch
+                ? "Invalid value for parameter: " + mismatch.getName()
+                : exception.getMessage();
+        return response(HttpStatus.BAD_REQUEST, message, request);
     }
 
     @ExceptionHandler({BindException.class, MethodArgumentNotValidException.class, ConstraintViolationException.class})

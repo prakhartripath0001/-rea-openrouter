@@ -1,6 +1,5 @@
 package com.openrouterclone.backend.service;
 
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -55,7 +54,8 @@ public class ModelService {
             throw new InvalidModelQueryException("direction must be 'asc' or 'desc'");
         }
 
-        Specification<ModelEntity> specification = Specification.where(ModelSpecifications.search(request.q()))
+        Specification<ModelEntity> specification = Specification.<ModelEntity>unrestricted()
+                .and(ModelSpecifications.search(request.q()))
                 .and(ModelSpecifications.modality(request.modality()))
                 .and(ModelSpecifications.providers(request.providers()))
                 .and(ModelSpecifications.minContextLength(request.minContextLength()))
@@ -72,7 +72,7 @@ public class ModelService {
     }
 
     public ModelResponse get(UUID id) {
-        ModelEntity model = modelRepository.findById(id).orElseThrow(() -> new ModelNotFoundException(id));
+        ModelEntity model = modelRepository.findById(id).orElseThrow(ModelNotFoundException::new);
         return modelMapper.toResponse(model);
     }
 }
