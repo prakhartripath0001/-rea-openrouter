@@ -17,7 +17,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.openrouterclone.backend.dto.ModelResponse;
@@ -40,7 +42,8 @@ class ModelServiceTest {
 
     @Test
     void listUsesDefaultsAndReturnsPagedResult() {
-        when(modelRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(Page.empty());
+        when(modelRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(Page.empty(PageRequest.of(0, 24, Sort.by("name"))));
 
         var response = modelService.list(new ModelSearchRequest(null, null, null, null, null, null,
                 null, null, null, null, null, null, null, null));
